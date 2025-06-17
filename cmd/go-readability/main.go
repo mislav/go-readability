@@ -47,6 +47,7 @@ func main() {
 	rootCmd.Flags().StringP("http", "l", "", "start the http server at the specified address")
 	rootCmd.Flags().BoolP("metadata", "m", false, "only print the page's metadata")
 	rootCmd.Flags().BoolP("text", "t", false, "only print the page's text")
+	rootCmd.Flags().BoolP("verbose", "v", false, "enable verbose logging")
 
 	err := rootCmd.Execute()
 	if err != nil {
@@ -66,8 +67,9 @@ func rootCmdHandler(cmd *cobra.Command, args []string) {
 	// Get cmd parameter
 	metadataOnly, _ := cmd.Flags().GetBool("metadata")
 	textOnly, _ := cmd.Flags().GetBool("text")
+	verbose, _ := cmd.Flags().GetBool("verbose")
 	if len(args) > 0 {
-		content, err := getContent(args[0], metadataOnly, textOnly)
+		content, err := getContent(args[0], metadataOnly, textOnly, verbose)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -90,7 +92,7 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		log.Println("process URL", url)
-		content, err := getContent(url, metadataOnly, textOnly)
+		content, err := getContent(url, metadataOnly, textOnly, false)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -109,7 +111,7 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getContent(srcPath string, metadataOnly, textOnly bool) (string, error) {
+func getContent(srcPath string, metadataOnly, textOnly, verbose bool) (string, error) {
 	// Open or fetch web page that will be parsed
 	var (
 		pageURL   *nurl.URL
@@ -145,8 +147,11 @@ func getContent(srcPath string, metadataOnly, textOnly bool) (string, error) {
 		return "", fmt.Errorf("failed to parse page: the page is not readable")
 	}
 
+	parser := readability.NewParser()
+	parser.Debug = verbose
+
 	// Get readable content from the reader
-	article, err := readability.FromReader(buf, pageURL)
+	article, err := parser.Parse(buf, pageURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse page: %v", err)
 	}
