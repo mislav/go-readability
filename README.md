@@ -2,6 +2,8 @@
 
 Go-Readability is a Go package that find the main readable content and the metadata from a HTML page. It works by removing clutter like buttons, ads, background images, script, etc.
 
+For information specific to this fork, see [FORK.md](./FORK.md).
+
 This package is based from [Readability.js] by [Mozilla] and written line by line to make sure it looks and works as similar as possible. This way, hopefully all web page that can be parsed by Readability.js are parse-able by go-readability as well.
 
 ## Table of Contents
