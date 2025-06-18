@@ -581,14 +581,15 @@ func (ps *Parser) prepArticle(articleContent *html.Node) {
 		// Detect any content that looks like images, embeds, or text
 		var findContent func(*html.Node) bool
 		findContent = func(node *html.Node) bool {
-			if node.Type == html.ElementNode {
+			switch node.Type {
+			case html.ElementNode:
 				switch node.Data {
 				// At this point, nasty iframes have been removed, only
 				// remain embedded video ones.
 				case "img", "picture", "embed", "object", "iframe":
 					return true
 				}
-			} else if node.Type == html.TextNode {
+			case html.TextNode:
 				if hasTextContent(node) {
 					return true
 				}
@@ -1023,7 +1024,7 @@ func (ps *Parser) grabArticle() *html.Node {
 
 			dom.AppendChild(page, topCandidate)
 			ps.initializeNode(topCandidate)
-		} else if topCandidate != nil {
+		} else {
 			// Find a better top candidate node if it contains (at least three)
 			// nodes which belong to `topCandidates` array and whose scores are
 			// quite closed with current `topCandidate` node.
@@ -1419,7 +1420,7 @@ func (ps *Parser) getArticleMetadata(jsonLd map[string]string) map[string]string
 			// dots to colons so we can match belops.
 			name = strings.ToLower(elementName)
 			name = strings.Join(strings.Fields(name), "")
-			name = strings.Replace(name, ".", ":", -1)
+			name = strings.ReplaceAll(name, ".", ":")
 			values[name] = strings.TrimSpace(content)
 		}
 	})
