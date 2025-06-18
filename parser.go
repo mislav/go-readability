@@ -1916,6 +1916,12 @@ func (ps *Parser) markDataTables(root *html.Node) {
 		}
 
 		rows, columns := ps.getRowAndColumnCount(table)
+		// single column/row tables are commonly used for page layout purposes.
+		if rows == 1 || columns == 1 {
+			ps.setReadabilityDataTable(table, false)
+			continue
+		}
+
 		if rows >= 10 || columns > 4 {
 			ps.setReadabilityDataTable(table, true)
 			continue
