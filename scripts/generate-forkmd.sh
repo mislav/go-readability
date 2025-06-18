@@ -23,7 +23,7 @@ This is a fork of \`github.com/go-shiori/go-readability\` that adds performance 
 
 MARKDOWN
 
-  git log --reverse --format='- %s - %h' --merges upstream/master...
+  git log --reverse --format='- %s - mislav/go-readability@%h' --merges upstream/master...
 
   cat <<MARKDOWN
 
@@ -38,16 +38,11 @@ MARKDOWN
 
 ## Benchmark
 
-The benchmark measures the performance of pasing a very large HTML document (\`test-pages/wikipedia-2/source.html\`).
+The benchmark measures the performance of parsing a very large HTML document (\`test-pages/wikipedia-2/source.html\`):
 
-Before:
 ~~~
-${bench_before}
-~~~
-
-After:
-~~~
-${bench_after}
+before: ${bench_before}
+after : ${bench_after}
 ~~~
 MARKDOWN
 } > FORK.md
