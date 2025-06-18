@@ -20,13 +20,19 @@ func (ps *Parser) Parse(input io.Reader, pageURL *nurl.URL) (Article, error) {
 		return Article{}, fmt.Errorf("failed to parse input: %v", err)
 	}
 
-	return ps.ParseDocument(doc, pageURL)
+	return ps.ParseAndMutate(doc, pageURL)
 }
 
 // ParseDocument parses the specified document and find the main readable content.
 func (ps *Parser) ParseDocument(doc *html.Node, pageURL *nurl.URL) (Article, error) {
 	// Clone document to make sure the original kept untouched
-	ps.doc = dom.Clone(doc, true)
+	return ps.ParseAndMutate(dom.Clone(doc, true), pageURL)
+}
+
+// ParseAndMutate is like ParseDocument, but mutates doc during parsing.
+func (ps *Parser) ParseAndMutate(doc *html.Node, pageURL *nurl.URL) (Article, error) {
+	// Clone document to make sure the original kept untouched
+	ps.doc = doc
 
 	// Reset parser data
 	ps.articleTitle = ""
