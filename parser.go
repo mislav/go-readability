@@ -209,15 +209,6 @@ func (ps *Parser) everyNode(nodeList []*html.Node, fn func(*html.Node) bool) boo
 	return true
 }
 
-// concatNodeLists concats all nodelists passed as arguments.
-func (ps *Parser) concatNodeLists(nodeLists ...[]*html.Node) []*html.Node {
-	var result []*html.Node
-	for i := 0; i < len(nodeLists); i++ {
-		result = append(result, nodeLists[i]...)
-	}
-	return result
-}
-
 // getAllNodesWithTag returns all nodes that has tag inside tagNames.
 func (ps *Parser) getAllNodesWithTag(node *html.Node, tagNames ...string) []*html.Node {
 	var result []*html.Node
@@ -371,10 +362,7 @@ func (ps *Parser) getArticleTitle() string {
 	} else if strings.Contains(curTitle, ": ") {
 		// Check if we have an heading containing this exact string, so
 		// we could assume it's the full title.
-		headings := ps.concatNodeLists(
-			dom.GetElementsByTagName(doc, "h1"),
-			dom.GetElementsByTagName(doc, "h2"),
-		)
+		headings := ps.getAllNodesWithTag(doc, "h1", "h2")
 
 		trimmedTitle := strings.TrimSpace(curTitle)
 		match := ps.someNode(headings, func(heading *html.Node) bool {
