@@ -364,8 +364,7 @@ func (ps *Parser) getArticleTitle() string {
 		titleHadHierarchicalSeparators = rxTitleHierarchySep.MatchString(curTitle)
 		curTitle = rxTitleRemoveFinalPart.ReplaceAllString(origTitle, "$1")
 
-		// If the resulting title is too short (3 words or fewer), remove
-		// the first part instead:
+		// If the resulting title is too short, remove the first part instead:
 		if wordCount(curTitle) < 3 {
 			curTitle = rxTitleRemove1stPart.ReplaceAllString(origTitle, "$1")
 		}
