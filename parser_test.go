@@ -52,7 +52,7 @@ func Test_parser(t *testing.T) {
 			expectedMetaPath := fp.Join(testDir, itemName, "expected-metadata.json")
 
 			// Extract source file
-			article, originalDoc, extractedDoc, err := extractSourceFile(sourcePath)
+			article, isReaderable, extractedDoc, err := extractSourceFile(sourcePath)
 			if err != nil {
 				t1.Error(err)
 			}
@@ -92,7 +92,7 @@ func Test_parser(t *testing.T) {
 				t1.Errorf("title, want %q got %q\n", metadata.Title, article.Title)
 			}
 
-			if isReaderable := CheckDocument(originalDoc); metadata.Readerable != isReaderable {
+			if metadata.Readerable != isReaderable {
 				t1.Errorf("readerable, want %v got %v\n", metadata.Readerable, isReaderable)
 			}
 
@@ -166,33 +166,39 @@ func Test_countCharsAndCommas(t *testing.T) {
 	}
 }
 
-func extractSourceFile(path string) (Article, *html.Node, *html.Node, error) {
+func extractSourceFile(path string) (Article, bool, *html.Node, error) {
 	// Open source file
 	f, err := os.Open(path)
 	if err != nil {
-		return Article{}, nil, nil, fmt.Errorf("failed to open source: %v", err)
+		return Article{}, false, nil, fmt.Errorf("failed to open source: %v", err)
 	}
 	defer f.Close()
 
 	// Decode to HTML
-	originalDoc, err := dom.Parse(f)
+	originalDoc, err := html.Parse(f)
 	if err != nil {
-		return Article{}, nil, nil, fmt.Errorf("failed to decode source: %v", err)
+		return Article{}, false, nil, fmt.Errorf("failed to decode source: %v", err)
 	}
+
+	parser := NewParser()
+	isReaderable := parser.CheckDocument(originalDoc)
 
 	// Extract readable article
-	article, err := FromDocument(originalDoc, fakeHostURL)
+	article, err := parser.ParseAndMutate(originalDoc, fakeHostURL)
 	if err != nil {
-		return Article{}, nil, nil, fmt.Errorf("failed to extract source: %v", err)
+		return Article{}, false, nil, fmt.Errorf("failed to extract source: %v", err)
 	}
 
-	// Parse article into HTML
+	// At this point, we have article.Node which we could potentially return as extractedDoc to
+	// compare with the DOM in "expected.html", but there could potentially be differences due to
+	// how some HTML nodes might get dropped during "expected.html" parsing. The safest way to
+	// compensate for that is to re-parse the HTML representation of the readable DOM.
 	extractedDoc, err := dom.Parse(strings.NewReader(article.Content))
 	if err != nil {
-		return Article{}, nil, nil, fmt.Errorf("failed to parse exytract to HTML: %v", err)
+		return Article{}, false, nil, fmt.Errorf("failed to parse extract to HTML: %v", err)
 	}
 
-	return article, originalDoc, extractedDoc, nil
+	return article, isReaderable, extractedDoc, nil
 }
 
 func decodeExpectedFile(path string) (*html.Node, error) {
