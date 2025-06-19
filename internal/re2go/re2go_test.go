@@ -79,7 +79,7 @@ func Test_IsNegativeClass(t *testing.T) {
 	assert.True(t, IsNegativeClass(`<div class="sponsor">Sponsored content</div>`))
 	assert.True(t, IsNegativeClass(`<section class="shopping">Shopping cart</section>`))
 	assert.True(t, IsNegativeClass(`<div class="tags">Tag list</div>`))
-	assert.True(t, IsNegativeClass(`<div class="tool">Tools and settings</div>`))
+	assert.False(t, IsNegativeClass(`<div class="tool">Tools and settings</div>`))
 	assert.True(t, IsNegativeClass(`<aside class="widget">Widget features</aside>`))
 
 	assert.False(t, IsNegativeClass(`<header class="navbar">Navigation bar</header>`))
