@@ -25,7 +25,7 @@ var (
 	rxTokenize             = regexp.MustCompile(`(?i)\W+`)
 	rxHasContent           = regexp.MustCompile(`(?i)\S$`)
 	rxPropertyPattern      = regexp.MustCompile(`(?i)\s*(dc|dcterm|og|article|twitter)\s*:\s*(author|creator|description|title|site_name|published_time|modified_time|image\S*)\s*`)
-	rxNamePattern          = regexp.MustCompile(`(?i)^\s*(?:(dc|dcterm|article|og|twitter|weibo:(article|webpage))\s*[\.:]\s*)?(author|creator|description|title|site_name|published_time|modified_time|image)\s*$`)
+	rxNamePattern          = regexp.MustCompile(`(?i)^\s*(?:(dc|dcterm|article|og|twitter|parsely|weibo:(article|webpage))\s*[-\.:]\s*)?(author|creator|pub-date|description|title|site_name|published_time|modified_time|image)\s*$`)
 	rxTitleSeparator       = regexp.MustCompile(`(?i) [\|\-\\/>»] `)
 	rxTitleHierarchySep    = regexp.MustCompile(`(?i) [\\/>»] `)
 	rxTitleRemoveFinalPart = regexp.MustCompile(`(?i)(.*)[\|\-\\/>»] .*`)
@@ -1421,7 +1421,9 @@ func (ps *Parser) getArticleMetadata(jsonLd map[string]string) map[string]string
 		values["weibo:article:title"],
 		values["weibo:webpage:title"],
 		values["title"],
-		values["twitter:title"])
+		values["twitter:title"],
+		values["parsely-title"],
+	)
 
 	if metadataTitle == "" {
 		metadataTitle = ps.getArticleTitle()
@@ -1432,7 +1434,9 @@ func (ps *Parser) getArticleMetadata(jsonLd map[string]string) map[string]string
 		jsonLd["byline"],
 		values["dc:creator"],
 		values["dcterm:creator"],
-		values["author"])
+		values["author"],
+		values["parsely-author"],
+	)
 
 	// get description
 	metadataExcerpt := strOr(
@@ -1465,6 +1469,7 @@ func (ps *Parser) getArticleMetadata(jsonLd map[string]string) map[string]string
 		values["dcterms.created"],
 		values["dcterms.issued"],
 		values["weibo:article:create_at"],
+		values["parsely-pub-date"],
 	)
 
 	// get modified date
