@@ -20,12 +20,12 @@ func IsPositiveClass(input string) bool {
 }
 
 // For IsNegativeClass, its original pattern is like this:
-// (?i)-ad-|hidden|^hid$| hid$| hid |^hid |banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget
+// (?i)-ad-|hidden|^hid$| hid$| hid |^hid |banner|combx|comment|com-|contact|footer|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget
 //
 // Unfortunately, re2go doesn't handle anchor like ^ and $ internally, so for convenience
 // I'll split that pattern into two:
 // - `^hid$| hid$| hid |^hid `
-// - `-ad-|hidden|banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget`
+// - `-ad-|hidden|banner|combx|comment|com-|contact|footer|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget`
 func IsNegativeClass(input string) bool {
 	return isNegativeClass1(input) || isNegativeClass2(input)
 }
@@ -80,7 +80,7 @@ func isNegativeClass1(input string) bool {
 	}
 }
 
-// This one handle: `-ad-|hidden|banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget`
+// This one handle: `-ad-|hidden|banner|combx|comment|com-|contact|footer|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget`
 func isNegativeClass2(input string) bool {
 	var cursor, marker int
 	input += string(rune(0)) // add terminating null
@@ -90,7 +90,7 @@ func isNegativeClass2(input string) bool {
 	for { /*!use:re2c:base_template
 		re2c:case-insensitive = 1;
 
-		negative = -ad-|hidden|banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget;
+		negative = -ad-|hidden|banner|combx|comment|com-|contact|footer|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget;
 
 		{negative} { return true }
 		*          { continue }

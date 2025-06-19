@@ -531,12 +531,12 @@ func IsPositiveClass(input string) bool {
 }
 
 // For IsNegativeClass, its original pattern is like this:
-// (?i)-ad-|hidden|^hid$| hid$| hid |^hid |banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget
+// (?i)-ad-|hidden|^hid$| hid$| hid |^hid |banner|combx|comment|com-|contact|footer|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget
 //
 // Unfortunately, re2go doesn't handle anchor like ^ and $ internally, so for convenience
 // I'll split that pattern into two:
 // - `^hid$| hid$| hid |^hid `
-// - `-ad-|hidden|banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget`
+// - `-ad-|hidden|banner|combx|comment|com-|contact|footer|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget`
 func IsNegativeClass(input string) bool {
 	return isNegativeClass1(input) || isNegativeClass2(input)
 }
@@ -921,7 +921,7 @@ func isNegativeClass1(input string) bool {
 	}
 }
 
-// This one handle: `-ad-|hidden|banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget`
+// This one handle: `-ad-|hidden|banner|combx|comment|com-|contact|footer|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|widget`
 func isNegativeClass2(input string) bool {
 	var cursor, marker int
 	input += string(rune(0)) // add terminating null
@@ -931,7 +931,6 @@ func isNegativeClass2(input string) bool {
 	for {
 		{
 			var yych byte
-			yyaccept := 0
 			yych = input[cursor]
 			switch yych {
 			case '-':
@@ -986,7 +985,7 @@ func isNegativeClass2(input string) bool {
 				goto yy87
 			default:
 				if limit <= cursor {
-					goto yy171
+					goto yy167
 				}
 				goto yy73
 			}
@@ -997,7 +996,6 @@ func isNegativeClass2(input string) bool {
 				continue
 			}
 		yy75:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1010,7 +1008,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy76:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1023,7 +1020,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy77:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1036,7 +1032,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy78:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1049,7 +1044,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy79:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1062,7 +1056,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy80:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1075,7 +1068,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy81:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1092,7 +1084,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy82:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1105,7 +1096,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy83:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1118,7 +1108,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy84:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1131,7 +1120,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy85:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1160,7 +1148,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy86:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1173,7 +1160,6 @@ func isNegativeClass2(input string) bool {
 				goto yy74
 			}
 		yy87:
-			yyaccept = 0
 			cursor++
 			marker = cursor
 			yych = input[cursor]
@@ -1198,11 +1184,7 @@ func isNegativeClass2(input string) bool {
 			}
 		yy89:
 			cursor = marker
-			if yyaccept == 0 {
-				goto yy74
-			} else {
-				goto yy129
-			}
+			goto yy74
 		yy90:
 			cursor++
 			yych = input[cursor]
@@ -1418,7 +1400,7 @@ func isNegativeClass2(input string) bool {
 			case 'N':
 				fallthrough
 			case 'n':
-				goto yy130
+				goto yy129
 			default:
 				goto yy89
 			}
@@ -1431,11 +1413,11 @@ func isNegativeClass2(input string) bool {
 			case 'B':
 				fallthrough
 			case 'b':
-				goto yy131
+				goto yy130
 			case 'M':
 				fallthrough
 			case 'm':
-				goto yy132
+				goto yy131
 			default:
 				goto yy89
 			}
@@ -1446,7 +1428,7 @@ func isNegativeClass2(input string) bool {
 			case 'T':
 				fallthrough
 			case 't':
-				goto yy133
+				goto yy132
 			default:
 				goto yy89
 			}
@@ -1457,7 +1439,7 @@ func isNegativeClass2(input string) bool {
 			case 'T':
 				fallthrough
 			case 't':
-				goto yy134
+				goto yy129
 			default:
 				goto yy89
 			}
@@ -1479,7 +1461,7 @@ func isNegativeClass2(input string) bool {
 			case 'D':
 				fallthrough
 			case 'd':
-				goto yy135
+				goto yy133
 			default:
 				goto yy89
 			}
@@ -1490,7 +1472,7 @@ func isNegativeClass2(input string) bool {
 			case 'T':
 				fallthrough
 			case 't':
-				goto yy136
+				goto yy134
 			default:
 				goto yy89
 			}
@@ -1523,7 +1505,7 @@ func isNegativeClass2(input string) bool {
 			case 'B':
 				fallthrough
 			case 'b':
-				goto yy137
+				goto yy135
 			default:
 				goto yy89
 			}
@@ -1534,7 +1516,7 @@ func isNegativeClass2(input string) bool {
 			case 'M':
 				fallthrough
 			case 'm':
-				goto yy138
+				goto yy136
 			default:
 				goto yy89
 			}
@@ -1545,7 +1527,7 @@ func isNegativeClass2(input string) bool {
 			case 'A':
 				fallthrough
 			case 'a':
-				goto yy139
+				goto yy137
 			default:
 				goto yy89
 			}
@@ -1556,7 +1538,7 @@ func isNegativeClass2(input string) bool {
 			case 'O':
 				fallthrough
 			case 'o':
-				goto yy140
+				goto yy138
 			default:
 				goto yy89
 			}
@@ -1567,7 +1549,7 @@ func isNegativeClass2(input string) bool {
 			case 'R':
 				fallthrough
 			case 'r':
-				goto yy141
+				goto yy139
 			default:
 				goto yy89
 			}
@@ -1578,11 +1560,11 @@ func isNegativeClass2(input string) bool {
 			case 'P':
 				fallthrough
 			case 'p':
-				goto yy142
+				goto yy140
 			case 'U':
 				fallthrough
 			case 'u':
-				goto yy143
+				goto yy141
 			default:
 				goto yy89
 			}
@@ -1593,7 +1575,7 @@ func isNegativeClass2(input string) bool {
 			case 'E':
 				fallthrough
 			case 'e':
-				goto yy144
+				goto yy142
 			default:
 				goto yy89
 			}
@@ -1604,7 +1586,7 @@ func isNegativeClass2(input string) bool {
 			case 'S':
 				fallthrough
 			case 's':
-				goto yy145
+				goto yy143
 			default:
 				goto yy89
 			}
@@ -1615,7 +1597,7 @@ func isNegativeClass2(input string) bool {
 			case 'N':
 				fallthrough
 			case 'n':
-				goto yy146
+				goto yy144
 			default:
 				goto yy89
 			}
@@ -1637,17 +1619,16 @@ func isNegativeClass2(input string) bool {
 			case 'G':
 				fallthrough
 			case 'g':
-				goto yy147
+				goto yy145
 			default:
 				goto yy89
 			}
 		yy128:
 			cursor++
-		yy129:
 			{
 				return true
 			}
-		yy130:
+		yy129:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1658,7 +1639,7 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
-		yy131:
+		yy130:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1669,7 +1650,29 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
+		yy131:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'E':
+				fallthrough
+			case 'e':
+				goto yy146
+			default:
+				goto yy89
+			}
 		yy132:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'A':
+				fallthrough
+			case 'a':
+				goto yy147
+			default:
+				goto yy89
+			}
+		yy133:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1680,68 +1683,29 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
-		yy133:
-			cursor++
-			yych = input[cursor]
-			switch yych {
-			case 'A':
-				fallthrough
-			case 'a':
-				goto yy149
-			default:
-				goto yy89
-			}
 		yy134:
-			yyaccept = 1
-			cursor++
-			marker = cursor
-			yych = input[cursor]
-			switch yych {
-			case 'E':
-				fallthrough
-			case 'e':
-				goto yy112
-			case 'N':
-				fallthrough
-			case 'n':
-				goto yy150
-			default:
-				goto yy129
-			}
-		yy135:
-			cursor++
-			yych = input[cursor]
-			switch yych {
-			case 'E':
-				fallthrough
-			case 'e':
-				goto yy151
-			default:
-				goto yy89
-			}
-		yy136:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'H':
 				fallthrough
 			case 'h':
-				goto yy152
+				goto yy149
 			default:
 				goto yy89
 			}
-		yy137:
+		yy135:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'R':
 				fallthrough
 			case 'r':
-				goto yy153
+				goto yy150
 			default:
 				goto yy89
 			}
-		yy138:
+		yy136:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1752,7 +1716,51 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
+		yy137:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'T':
+				fallthrough
+			case 't':
+				goto yy151
+			default:
+				goto yy89
+			}
+		yy138:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'L':
+				fallthrough
+			case 'l':
+				goto yy152
+			default:
+				goto yy89
+			}
 		yy139:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'E':
+				fallthrough
+			case 'e':
+				goto yy128
+			default:
+				goto yy89
+			}
+		yy140:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'P':
+				fallthrough
+			case 'p':
+				goto yy153
+			default:
+				goto yy89
+			}
+		yy141:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1763,36 +1771,14 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
-		yy140:
-			cursor++
-			yych = input[cursor]
-			switch yych {
-			case 'L':
-				fallthrough
-			case 'l':
-				goto yy155
-			default:
-				goto yy89
-			}
-		yy141:
-			cursor++
-			yych = input[cursor]
-			switch yych {
-			case 'E':
-				fallthrough
-			case 'e':
-				goto yy128
-			default:
-				goto yy89
-			}
 		yy142:
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'P':
+			case 'B':
 				fallthrough
-			case 'p':
-				goto yy156
+			case 'b':
+				goto yy155
 			default:
 				goto yy89
 			}
@@ -1800,10 +1786,10 @@ func isNegativeClass2(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'T':
+			case 'C':
 				fallthrough
-			case 't':
-				goto yy157
+			case 'c':
+				goto yy156
 			default:
 				goto yy89
 			}
@@ -1811,10 +1797,10 @@ func isNegativeClass2(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'B':
+			case 'S':
 				fallthrough
-			case 'b':
-				goto yy158
+			case 's':
+				goto yy157
 			default:
 				goto yy89
 			}
@@ -1822,10 +1808,10 @@ func isNegativeClass2(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'C':
+			case 'E':
 				fallthrough
-			case 'c':
-				goto yy159
+			case 'e':
+				goto yy158
 			default:
 				goto yy89
 			}
@@ -1833,10 +1819,10 @@ func isNegativeClass2(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'S':
+			case 'N':
 				fallthrough
-			case 's':
-				goto yy160
+			case 'n':
+				goto yy158
 			default:
 				goto yy89
 			}
@@ -1844,10 +1830,10 @@ func isNegativeClass2(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'E':
+			case 'C':
 				fallthrough
-			case 'e':
-				goto yy161
+			case 'c':
+				goto yy158
 			default:
 				goto yy89
 			}
@@ -1858,7 +1844,7 @@ func isNegativeClass2(input string) bool {
 			case 'N':
 				fallthrough
 			case 'n':
-				goto yy161
+				goto yy128
 			default:
 				goto yy89
 			}
@@ -1866,10 +1852,10 @@ func isNegativeClass2(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'C':
+			case 'E':
 				fallthrough
-			case 'c':
-				goto yy161
+			case 'e':
+				goto yy159
 			default:
 				goto yy89
 			}
@@ -1877,10 +1863,10 @@ func isNegativeClass2(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'O':
+			case 'A':
 				fallthrough
-			case 'o':
-				goto yy162
+			case 'a':
+				goto yy160
 			default:
 				goto yy89
 			}
@@ -1888,47 +1874,14 @@ func isNegativeClass2(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'N':
+			case 'E':
 				fallthrough
-			case 'n':
-				goto yy128
+			case 'e':
+				goto yy161
 			default:
 				goto yy89
 			}
 		yy152:
-			cursor++
-			yych = input[cursor]
-			switch yych {
-			case 'E':
-				fallthrough
-			case 'e':
-				goto yy163
-			default:
-				goto yy89
-			}
-		yy153:
-			cursor++
-			yych = input[cursor]
-			switch yych {
-			case 'A':
-				fallthrough
-			case 'a':
-				goto yy164
-			default:
-				goto yy89
-			}
-		yy154:
-			cursor++
-			yych = input[cursor]
-			switch yych {
-			case 'E':
-				fallthrough
-			case 'e':
-				goto yy165
-			default:
-				goto yy89
-			}
-		yy155:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1939,29 +1892,29 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
-		yy156:
+		yy153:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'I':
 				fallthrough
 			case 'i':
-				goto yy166
+				goto yy162
 			default:
 				goto yy89
 			}
-		yy157:
+		yy154:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'B':
 				fallthrough
 			case 'b':
-				goto yy167
+				goto yy163
 			default:
 				goto yy89
 			}
-		yy158:
+		yy155:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1972,18 +1925,18 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
-		yy159:
+		yy156:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'R':
 				fallthrough
 			case 'r':
-				goto yy168
+				goto yy164
 			default:
 				goto yy89
 			}
-		yy160:
+		yy157:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1994,7 +1947,7 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
-		yy161:
+		yy158:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -2005,40 +1958,29 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
-		yy162:
-			cursor++
-			yych = input[cursor]
-			switch yych {
-			case 'T':
-				fallthrough
-			case 't':
-				goto yy141
-			default:
-				goto yy89
-			}
-		yy163:
+		yy159:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'A':
 				fallthrough
 			case 'a':
-				goto yy165
+				goto yy161
 			default:
 				goto yy89
 			}
-		yy164:
+		yy160:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'I':
 				fallthrough
 			case 'i':
-				goto yy151
+				goto yy148
 			default:
 				goto yy89
 			}
-		yy165:
+		yy161:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -2049,40 +1991,40 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
-		yy166:
+		yy162:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'N':
 				fallthrough
 			case 'n':
-				goto yy169
+				goto yy165
 			default:
 				goto yy89
 			}
-		yy167:
+		yy163:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'O':
 				fallthrough
 			case 'o':
-				goto yy131
+				goto yy130
 			default:
 				goto yy89
 			}
-		yy168:
+		yy164:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'A':
 				fallthrough
 			case 'a':
-				goto yy170
+				goto yy166
 			default:
 				goto yy89
 			}
-		yy169:
+		yy165:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -2093,18 +2035,18 @@ func isNegativeClass2(input string) bool {
 			default:
 				goto yy89
 			}
-		yy170:
+		yy166:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'P':
 				fallthrough
 			case 'p':
-				goto yy130
+				goto yy129
 			default:
 				goto yy89
 			}
-		yy171:
+		yy167:
 			{
 				return false
 			}
