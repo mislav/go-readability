@@ -933,7 +933,8 @@ func (ps *Parser) grabArticle() *html.Node {
 			contentScore := 1
 
 			// Add points for any commas within this paragraph.
-			contentScore += numCommas
+			// NOTE: Readability.js has a bug where it always adds 1 to comma count
+			contentScore += numCommas + 1
 
 			// For every 100 characters in this paragraph, add another point. Up to 3 points.
 			contentScore += int(math.Min(math.Floor(float64(numChars)/100.0), 3.0))
