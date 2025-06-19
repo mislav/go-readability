@@ -864,7 +864,17 @@ func (ps *Parser) grabArticle() *html.Node {
 						}
 					} else if p != nil {
 						for p.LastChild != nil && ps.isWhitespace(p.LastChild) {
-							p.RemoveChild(p.LastChild)
+							if p.NextSibling != nil && p.NextSibling.Type == html.ElementNode {
+								// NOTE: Readability.js doesn't have this condition, but this
+								// prevents whitespace nodes between paragraphs to be overzealously
+								// removed, which can lead to missing space characters between words
+								// in the resulting article.TextContent.
+								n := p.LastChild
+								dom.DetachChild(n)
+								p.Parent.InsertBefore(n, p.NextSibling)
+							} else {
+								p.RemoveChild(p.LastChild)
+							}
 						}
 						p = nil
 					}
