@@ -1639,6 +1639,16 @@ func (ps *Parser) unwrapNoscriptImages(doc *html.Node) {
 			}
 
 			dom.ReplaceChild(noscript.Parent, dom.FirstElementChild(tmpBody), prevElement)
+		} else {
+			// Replace <noscript> with the image that was in it.
+			img := dom.FirstElementChild(tmpBody)
+			if img.Data != "img" {
+				img = dom.GetElementsByTagName(img, "img")[0]
+			}
+			if dom.GetAttribute(img, "width") == "1" && dom.GetAttribute(img, "height") == "1" {
+				return
+			}
+			dom.ReplaceChild(noscript.Parent, img, noscript)
 		}
 	})
 }
