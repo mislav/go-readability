@@ -73,6 +73,7 @@ func (ps *Parser) ParseAndMutate(doc *html.Node, pageURL *nurl.URL) (Article, er
 	// Fetch metadata
 	metadata := ps.getArticleMetadata(jsonLd)
 	ps.articleTitle = metadata["title"]
+	ps.articleByline = metadata["byline"]
 
 	// Try to grab article content
 	finalHTMLContent := ""
@@ -99,11 +100,6 @@ func (ps *Parser) ParseAndMutate(doc *html.Node, pageURL *nurl.URL) (Article, er
 		finalTextContent = strings.TrimSpace(finalTextContent)
 	}
 
-	finalByline := metadata["byline"]
-	if finalByline == "" {
-		finalByline = ps.articleByline
-	}
-
 	// Excerpt is an supposed to be short and concise,
 	// so it shouldn't have any new line
 	excerpt := strings.TrimSpace(metadata["excerpt"])
@@ -118,7 +114,7 @@ func (ps *Parser) ParseAndMutate(doc *html.Node, pageURL *nurl.URL) (Article, er
 	}
 
 	validTitle := strings.ToValidUTF8(ps.articleTitle, replacementTitle)
-	validByline := strings.ToValidUTF8(finalByline, "")
+	validByline := strings.ToValidUTF8(ps.articleByline, "")
 	validExcerpt := strings.ToValidUTF8(excerpt, "")
 
 	publishedTime := ps.getDate(metadata, "publishedTime")
