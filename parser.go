@@ -1775,30 +1775,35 @@ func (ps *Parser) getClassWeight(node *html.Node) int {
 // clean cleans a node of all elements of type "tag".
 // (Unless it's a youtube/vimeo video. People love movies.)
 func (ps *Parser) clean(node *html.Node, tag string) {
-	isEmbed := indexOf([]string{"object", "embed", "iframe"}, tag) != -1
+	ps.removeNodes(dom.GetElementsByTagName(node, tag), func(element *html.Node) bool {
+		return !ps.isVideoEmbed(element)
+	})
+}
+
+// isVideoEmbed returns true if the element looks like a video embed with respect to the
+// AllowedVideoRegex property.
+func (ps *Parser) isVideoEmbed(embed *html.Node) bool {
+	if embed.Data != "object" && embed.Data != "embed" && embed.Data != "iframe" {
+		return false
+	}
+
 	rxVideoVilter := ps.AllowedVideoRegex
 	if rxVideoVilter == nil {
 		rxVideoVilter = rxVideos
 	}
 
-	ps.removeNodes(dom.GetElementsByTagName(node, tag), func(element *html.Node) bool {
-		// Allow youtube and vimeo videos through as people usually want to see those.
-		if isEmbed {
-			// First, check the elements attributes to see if any of them contain
-			// youtube or vimeo
-			for _, attr := range element.Attr {
-				if rxVideoVilter.MatchString(attr.Val) {
-					return false
-				}
-			}
-
-			// For embed with <object> tag, check inner HTML as well.
-			if dom.TagName(element) == "object" && rxVideoVilter.MatchString(dom.InnerHTML(element)) {
-				return false
-			}
+	for _, attr := range embed.Attr {
+		if rxVideoVilter.MatchString(attr.Val) {
+			return true
 		}
+	}
+
+	// For embed with <object> tag, check inner HTML as well.
+	if embed.Data == "object" && rxVideoVilter.MatchString(dom.InnerHTML(embed)) {
 		return true
-	})
+	}
+
+	return false
 }
 
 // hasAncestorTag checks if a given node has one of its ancestor tag
@@ -2018,12 +2023,6 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 		return
 	}
 
-	// Prepare regex video filter
-	rxVideoVilter := ps.AllowedVideoRegex
-	if rxVideoVilter == nil {
-		rxVideoVilter = rxVideos
-	}
-
 	// Gather counts for other typical elements embedded within.
 	// Traverse backwards so we can remove nodes at the same time
 	// without effecting the traversal.
@@ -2060,6 +2059,7 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 		liCount := 0
 		inputCount := 0
 		embedCount := 0
+		hasVideoEmbed := false
 
 		// Walk the DOM under this node to determine element counts and various types of content
 		// densities. Most notably, this scans for:
@@ -2109,6 +2109,9 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 					inputCount++
 				case "object", "embed", "iframe":
 					embedCount++
+					if ps.isVideoEmbed(n) {
+						hasVideoEmbed = true
+					}
 				}
 			}
 			for child := range n.ChildNodes() {
@@ -2116,6 +2119,10 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 			}
 		}
 		walk(node, nil, nil, nil)
+
+		if hasVideoEmbed {
+			return false
+		}
 
 		isList := tag == "ul" || tag == "ol"
 		if !isList {
@@ -2125,22 +2132,6 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 		// If there are not very many commas, and the number of non-paragraph elements is more than
 		// paragraphs or other ominous signs, remove the element.
 		if commas.Total < 10 {
-			embeds := ps.getAllNodesWithTag(node, "object", "embed", "iframe")
-			for _, embed := range embeds {
-				// If this embed has attribute that matches video regex,
-				// don't delete it.
-				for _, attr := range embed.Attr {
-					if rxVideoVilter.MatchString(attr.Val) {
-						return false
-					}
-				}
-
-				// For embed with <object> tag, check inner HTML as well.
-				if dom.TagName(embed) == "object" && rxVideoVilter.MatchString(dom.InnerHTML(embed)) {
-					return false
-				}
-			}
-
 			var headingDensity float64
 			if chars.Total > 0 {
 				headingDensity = float64(headingChars.Total) / float64(chars.Total)
