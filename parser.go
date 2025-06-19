@@ -709,27 +709,11 @@ func (ps *Parser) textSimilarity(textA, textB string) float64 {
 	return 1 - distanceB
 }
 
-// checkByline determines if a node is used as byline.
-func (ps *Parser) checkByline(node *html.Node, matchString string) bool {
-	if ps.articleByline != "" {
-		return false
-	}
-
+// isValidByline determines if a node is used as byline.
+func (ps *Parser) isValidByline(node *html.Node, matchString string) bool {
 	rel := dom.GetAttribute(node, "rel")
 	itemprop := dom.GetAttribute(node, "itemprop")
-	if rel != "author" && !strings.Contains(itemprop, "author") && !re2go.IsByline(matchString) {
-		return false
-	}
-
-	nodeText := ps.getInnerText(node, false)
-	// For now, it's intentional that counting characters happens before
-	// whitespace normalization. Doing it the other way around breaks several
-	// tests and the bylines end up different.
-	if nChar := charCount(nodeText); nChar > 0 && nChar < 100 {
-		ps.articleByline = normalizeWhitespace(nodeText)
-		return true
-	}
-	return false
+	return rel == "author" || strings.Contains(itemprop, "author") || re2go.IsByline(matchString)
 }
 
 // getNodeAncestors gets the node's direct parent and grandparents.
@@ -800,9 +784,16 @@ func (ps *Parser) grabArticle() *html.Node {
 
 			// Check to see if this node is a byline, and remove it if
 			// it is true.
-			if ps.checkByline(node, matchString) {
-				node = ps.removeAndGetNext(node)
-				continue
+			if ps.articleByline == "" && ps.isValidByline(node, matchString) {
+				bylineText := ps.getInnerText(node, false)
+				// For now, it's intentional that counting characters happens before
+				// whitespace normalization. Doing it the other way around breaks several
+				// tests and the bylines end up different.
+				if nChar := charCount(bylineText); nChar > 0 && nChar < 100 {
+					ps.articleByline = normalizeWhitespace(bylineText)
+					node = ps.removeAndGetNext(node)
+					continue
+				}
 			}
 
 			if shouldRemoveTitleHeader && ps.headerDuplicatesTitle(node) {
