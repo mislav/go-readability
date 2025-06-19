@@ -44,6 +44,9 @@ var (
 	rxJsonLdArticleTypes   = regexp.MustCompile(`(?i)^Article|AdvertiserContentArticle|NewsArticle|AnalysisNewsArticle|AskPublicNewsArticle|BackgroundNewsArticle|OpinionNewsArticle|ReportageNewsArticle|ReviewNewsArticle|Report|SatiricalArticle|ScholarlyArticle|MedicalScholarlyArticle|SocialMediaPosting|BlogPosting|LiveBlogPosting|DiscussionForumPosting|TechArticle|APIReference$`)
 	rxCDATA                = regexp.MustCompile(`^\s*<!\[CDATA\[|\]\]>\s*$`)
 	rxSchemaOrg            = regexp.MustCompile(`(?i)^https?\:\/\/schema\.org\/?$`)
+	// used to see if a node's content matches words commonly used for ad blocks or loading indicators
+	rxAdWords      = regexp.MustCompile(`(?i)^(ad(vertising|vertisement)?|pub(licité)?|werb(ung)?|广告|Реклама|Anuncio)$`)
+	rxLoadingWords = regexp.MustCompile(`(?i)^((loading|正在加载|Загрузка|chargement|cargando)(…|\.\.\.)?)$`)
 )
 
 // Constants that used by readability.
@@ -2060,7 +2063,9 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 			return true
 		}
 
+		innerTextSingle := ""
 		chars := &charCounter{}
+		textChars := &charCounter{}
 		listChars := &charCounter{}
 		var linkCharsWeighted float64
 		headingChars := &charCounter{}
@@ -2079,12 +2084,16 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 		// - character count of any heading text, e.g. <h1>
 		// - character count of text under <a>, weighted by href type
 		// - number of comma characters in text
-		var walk func(*html.Node, runeCounter, runeCounter, runeCounter)
-		walk = func(n *html.Node, listCounter, headingCounter, linkCounter runeCounter) {
+		var walk func(*html.Node, runeCounter, runeCounter, runeCounter, runeCounter)
+		walk = func(n *html.Node, textCounter, listCounter, headingCounter, linkCounter runeCounter) {
 			if n.Type == html.TextNode {
+				oldCharCount := chars.Total
 				for _, r := range n.Data {
 					chars.Count(r)
 					commas.Count(r)
+					if textCounter != nil {
+						textCounter.Count(r)
+					}
 					if listCounter != nil {
 						listCounter.Count(r)
 					}
@@ -2094,6 +2103,11 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 					if linkCounter != nil {
 						linkCounter.Count(r)
 					}
+				}
+				if chars.Total > oldCharCount {
+					// If the character counter has incremented, this text has non-whitespace
+					// content. Save it so we can match it against rxAdWords below.
+					innerTextSingle = n.Data
 				}
 				return
 			}
@@ -2124,12 +2138,19 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 						hasVideoEmbed = true
 					}
 				}
+				// separate switch statement because it has a lot of overlap with elements of above
+				switch n.Data {
+				case "blockquote", "dl", "div", "img", "ol", "p", "pre", "table", "ul", "span", "li", "td":
+					textCounter = textChars.ResetContext()
+				}
 			}
-			for child := range n.ChildNodes() {
-				walk(child, listCounter, headingCounter, linkCounter)
+			for child := n.FirstChild; child != nil; child = child.NextSibling {
+				walk(child, textCounter, listCounter, headingCounter, linkCounter)
 			}
 		}
-		walk(node, nil, nil, nil)
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			walk(child, nil, nil, nil, nil)
+		}
 
 		if hasVideoEmbed {
 			return false
@@ -2143,26 +2164,54 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 		// If there are not very many commas, and the number of non-paragraph elements is more than
 		// paragraphs or other ominous signs, remove the element.
 		if commas.Total < 10 {
+			if innerTextSingle != "" {
+				// These patterns themselves don't have any spaces, so we can get away without using
+				// normalizeWhitespace.
+				innerTextSingle = strings.TrimSpace(innerTextSingle)
+				if rxAdWords.MatchString(innerTextSingle) || rxLoadingWords.MatchString(innerTextSingle) {
+					return true
+				}
+			}
+
+			var textDensity float64
+			var linkDensity float64
 			var headingDensity float64
 			if chars.Total > 0 {
-				headingDensity = float64(headingChars.Total) / float64(chars.Total)
-			}
-			var linkDensity float64
-			if chars.Total > 0 {
+				textDensity = float64(textChars.Total) / float64(chars.Total)
 				linkDensity = linkCharsWeighted / float64(chars.Total)
+				headingDensity = float64(headingChars.Total) / float64(chars.Total)
 			}
 
 			// Readability.js reduces the weight of <li> elements by a static 100 when comparing to
 			// the number of paragraphs.
 			const liCountOffset = -100
 
-			haveToRemove := (imgCount > 1 && float64(pCount)/float64(imgCount) < 0.5 && !ps.hasAncestorTag(node, "figure", 3, nil)) ||
-				(!isList && (liCount+liCountOffset) > pCount) ||
-				(float64(inputCount) > math.Floor(float64(pCount)/3)) ||
-				(!isList && headingDensity < 0.9 && chars.Total < 25 && (imgCount == 0 || imgCount > 2) && !ps.hasAncestorTag(node, "figure", 3, nil)) ||
-				(!isList && weight < 25 && linkDensity > 0.2) ||
-				(weight >= 25 && linkDensity > 0.5) ||
-				((embedCount == 1 && chars.Total < 75) || embedCount > 1)
+			haveToRemove := false
+			if imgCount > 1 && float64(pCount)/float64(imgCount) < 0.5 && !ps.hasAncestorTag(node, "figure", 3, nil) {
+				ps.logf("bad p to img ratio (img=%d, p=%d)", pCount, imgCount)
+				haveToRemove = true
+			} else if !isList && (liCount+liCountOffset) > pCount {
+				ps.logf("too many li's outside of a list (li=%d%+d > p=%d)", liCount, liCountOffset, pCount)
+				haveToRemove = true
+			} else if float64(inputCount) > math.Floor(float64(pCount)/3) {
+				ps.logf("too many inputs per p (input=%d, p=%d)", inputCount, pCount)
+				haveToRemove = true
+			} else if !isList && headingDensity < 0.9 && chars.Total < 25 && (imgCount == 0 || imgCount > 2) && linkDensity > 0 && !ps.hasAncestorTag(node, "figure", 3, nil) {
+				ps.logf("suspiciously short (headingDensity=%.2f, img=%d, linkDensity=%.2f)", headingDensity, imgCount, linkDensity)
+				haveToRemove = true
+			} else if !isList && weight < 25 && linkDensity > 0.2 {
+				ps.logf("low weight and a little linky (linkDensity=%.2f)", linkDensity)
+				haveToRemove = true
+			} else if weight >= 25 && linkDensity > 0.5 {
+				ps.logf("high weight and mostly links (linkDensity=%.2f)", linkDensity)
+				haveToRemove = true
+			} else if (embedCount == 1 && chars.Total < 75) || embedCount > 1 {
+				ps.logf("suspicious embed (embedCount=%d, contentLength=%d)", embedCount, chars.Total)
+				haveToRemove = true
+			} else if imgCount == 0 && textDensity == 0 {
+				ps.log("no useful content (img=0, textDensity=0.0)")
+				haveToRemove = true
+			}
 
 			// Allow simple lists of images to remain in pages
 			if isList && haveToRemove {
