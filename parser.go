@@ -2396,7 +2396,14 @@ type inspectedNode struct {
 }
 
 func (n *inspectedNode) String() string {
-	return dom.OuterHTML(n.node)
+	if n.node.Type == html.TextNode {
+		return n.node.Data
+	}
+	attrs := ""
+	for _, attr := range n.node.Attr {
+		attrs += fmt.Sprintf(` %s="%s"`, attr.Key, attr.Val)
+	}
+	return fmt.Sprintf("<%s%s>", n.node.Data, attrs)
 }
 
 // UNUSED CODES
