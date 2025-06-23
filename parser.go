@@ -21,16 +21,16 @@ import (
 // All of the regular expressions in use within readability.
 // Defined up here so we don't instantiate them repeatedly in loops *.
 var (
-	rxVideos               = regexp.MustCompile(`(?i)//(www\.)?((dailymotion|youtube|youtube-nocookie|player\.vimeo|v\.qq)\.com|(archive|upload\.wikimedia)\.org|player\.twitch\.tv)`)
+	rxVideos               = regexp.MustCompile(`(?i)//(www\.)?((dailymotion|youtube|youtube-nocookie|player\.vimeo|v\.qq|bilibili|live\.bilibili)\.com|(archive|upload\.wikimedia)\.org|player\.twitch\.tv)`)
 	rxTokenize             = regexp.MustCompile(`(?i)\W+`)
 	rxHasContent           = regexp.MustCompile(`(?i)\S$`)
 	rxPropertyPattern      = regexp.MustCompile(`(?i)\s*(dc|dcterm|og|article|twitter)\s*:\s*(author|creator|description|title|site_name|published_time|modified_time|image\S*)\s*`)
-	rxNamePattern          = regexp.MustCompile(`(?i)^\s*(?:(dc|dcterm|article|og|twitter|weibo:(article|webpage))\s*[\.:]\s*)?(author|creator|description|title|site_name|published_time|modified_time|image)\s*$`)
-	rxTitleSeparator       = regexp.MustCompile(`(?i) [\|\-\\/>»] `)
+	rxNamePattern          = regexp.MustCompile(`(?i)^\s*(?:(dc|dcterm|article|og|twitter|parsely|weibo:(article|webpage))\s*[-\.:]\s*)?(author|creator|pub-date|description|title|site_name|published_time|modified_time|image)\s*$`)
+	rxTitleSeparator       = regexp.MustCompile(`(?i) [\|\-–—\\/>»] `)
 	rxTitleHierarchySep    = regexp.MustCompile(`(?i) [\\/>»] `)
-	rxTitleRemoveFinalPart = regexp.MustCompile(`(?i)(.*)[\|\-\\/>»] .*`)
-	rxTitleRemove1stPart   = regexp.MustCompile(`(?i)[^\|\-\\/>»]*[\|\-\\/>»](.*)`)
-	rxTitleAnySeparator    = regexp.MustCompile(`(?i)[\|\-\\/>»]+`)
+	rxTitleRemoveFinalPart = regexp.MustCompile(`(?i)(.*)[\|\-–—\\/>»] .*`)
+	rxTitleRemove1stPart   = regexp.MustCompile(`(?i)[^\|\-–—\\/>»]*[\|\-–—\\/>»](.*)`)
+	rxTitleAnySeparator    = regexp.MustCompile(`(?i)[\|\-–—\\/>»]+`)
 	rxDisplayNone          = regexp.MustCompile(`(?i)display\s*:\s*none`)
 	rxVisibilityHidden     = regexp.MustCompile(`(?i)visibility\s*:\s*hidden`)
 	rxSentencePeriod       = regexp.MustCompile(`(?i)\.( |$)`)
@@ -44,13 +44,16 @@ var (
 	rxJsonLdArticleTypes   = regexp.MustCompile(`(?i)^Article|AdvertiserContentArticle|NewsArticle|AnalysisNewsArticle|AskPublicNewsArticle|BackgroundNewsArticle|OpinionNewsArticle|ReportageNewsArticle|ReviewNewsArticle|Report|SatiricalArticle|ScholarlyArticle|MedicalScholarlyArticle|SocialMediaPosting|BlogPosting|LiveBlogPosting|DiscussionForumPosting|TechArticle|APIReference$`)
 	rxCDATA                = regexp.MustCompile(`^\s*<!\[CDATA\[|\]\]>\s*$`)
 	rxSchemaOrg            = regexp.MustCompile(`(?i)^https?\:\/\/schema\.org\/?$`)
+	// used to see if a node's content matches words commonly used for ad blocks or loading indicators
+	rxAdWords      = regexp.MustCompile(`(?i)^(ad(vertising|vertisement)?|pub(licité)?|werb(ung)?|广告|Реклама|Anuncio)$`)
+	rxLoadingWords = regexp.MustCompile(`(?i)^((loading|正在加载|Загрузка|chargement|cargando)(…|\.\.\.)?)$`)
 )
 
 // Constants that used by readability.
 var (
 	unlikelyRoles                = sliceToMap("menu", "menubar", "complementary", "navigation", "alert", "alertdialog", "dialog")
 	divToPElems                  = sliceToMap("blockquote", "dl", "div", "img", "ol", "p", "pre", "table", "ul", "select")
-	alterToDivExceptions         = []string{"div", "article", "section", "p"}
+	alterToDivExceptions         = []string{"div", "article", "section", "p", "ol", "ul"}
 	presentationalAttributes     = []string{"align", "background", "bgcolor", "border", "cellpadding", "cellspacing", "frame", "hspace", "rules", "style", "valign", "vspace"}
 	deprecatedSizeAttributeElems = []string{"table", "th", "td", "hr", "pre"}
 	phrasingElems                = []string{
@@ -209,15 +212,6 @@ func (ps *Parser) everyNode(nodeList []*html.Node, fn func(*html.Node) bool) boo
 	return true
 }
 
-// concatNodeLists concats all nodelists passed as arguments.
-func (ps *Parser) concatNodeLists(nodeLists ...[]*html.Node) []*html.Node {
-	var result []*html.Node
-	for i := 0; i < len(nodeLists); i++ {
-		result = append(result, nodeLists[i]...)
-	}
-	return result
-}
-
 // getAllNodesWithTag returns all nodes that has tag inside tagNames.
 func (ps *Parser) getAllNodesWithTag(node *html.Node, tagNames ...string) []*html.Node {
 	var result []*html.Node
@@ -364,18 +358,14 @@ func (ps *Parser) getArticleTitle() string {
 		titleHadHierarchicalSeparators = rxTitleHierarchySep.MatchString(curTitle)
 		curTitle = rxTitleRemoveFinalPart.ReplaceAllString(origTitle, "$1")
 
-		// If the resulting title is too short (3 words or fewer), remove
-		// the first part instead:
+		// If the resulting title is too short, remove the first part instead:
 		if wordCount(curTitle) < 3 {
 			curTitle = rxTitleRemove1stPart.ReplaceAllString(origTitle, "$1")
 		}
 	} else if strings.Contains(curTitle, ": ") {
 		// Check if we have an heading containing this exact string, so
 		// we could assume it's the full title.
-		headings := ps.concatNodeLists(
-			dom.GetElementsByTagName(doc, "h1"),
-			dom.GetElementsByTagName(doc, "h2"),
-		)
+		headings := ps.getAllNodesWithTag(doc, "h1", "h2")
 
 		trimmedTitle := strings.TrimSpace(curTitle)
 		match := ps.someNode(headings, func(heading *html.Node) bool {
@@ -719,27 +709,11 @@ func (ps *Parser) textSimilarity(textA, textB string) float64 {
 	return 1 - distanceB
 }
 
-// checkByline determines if a node is used as byline.
-func (ps *Parser) checkByline(node *html.Node, matchString string) bool {
-	if ps.articleByline != "" {
-		return false
-	}
-
+// isValidByline determines if a node is used as byline.
+func (ps *Parser) isValidByline(node *html.Node, matchString string) bool {
 	rel := dom.GetAttribute(node, "rel")
 	itemprop := dom.GetAttribute(node, "itemprop")
-	if rel != "author" && !strings.Contains(itemprop, "author") && !re2go.IsByline(matchString) {
-		return false
-	}
-
-	nodeText := ps.getInnerText(node, false)
-	// For now, it's intentional that counting characters happens before
-	// whitespace normalization. Doing it the other way around breaks several
-	// tests and the bylines end up different.
-	if nChar := charCount(nodeText); nChar > 0 && nChar < 100 {
-		ps.articleByline = normalizeWhitespace(nodeText)
-		return true
-	}
-	return false
+	return rel == "author" || strings.Contains(itemprop, "author") || re2go.IsByline(matchString)
 }
 
 // getNodeAncestors gets the node's direct parent and grandparents.
@@ -787,6 +761,7 @@ func (ps *Parser) grabArticle() *html.Node {
 		var node = dom.DocumentElement(doc)
 		shouldRemoveTitleHeader := true
 
+	grabLoop:
 		for node != nil {
 			matchString := dom.ClassName(node) + " " + dom.ID(node)
 
@@ -810,9 +785,28 @@ func (ps *Parser) grabArticle() *html.Node {
 
 			// Check to see if this node is a byline, and remove it if
 			// it is true.
-			if ps.checkByline(node, matchString) {
-				node = ps.removeAndGetNext(node)
-				continue
+			if ps.articleByline == "" && ps.isValidByline(node, matchString) {
+				// Find child node matching [itemprop="name"] and use that if it exists for a more
+				// accurate author name byline
+				endOfSearchMarkerNode := ps.getNextNode(node, true)
+				for next := ps.getNextNode(node, false); next != nil && next != endOfSearchMarkerNode; next = ps.getNextNode(next, false) {
+					itemprop := dom.GetAttribute(next, "itemprop")
+					if strings.Contains(itemprop, "name") {
+						ps.articleByline = ps.getInnerText(next, false)
+						node = ps.removeAndGetNext(node)
+						continue grabLoop
+					}
+				}
+
+				bylineText := ps.getInnerText(node, false)
+				// For now, it's intentional that counting characters happens before
+				// whitespace normalization. Doing it the other way around breaks several
+				// tests and the bylines end up different.
+				if nChar := charCount(bylineText); nChar > 0 && nChar < 100 {
+					ps.articleByline = normalizeWhitespace(bylineText)
+					node = ps.removeAndGetNext(node)
+					continue
+				}
 			}
 
 			if shouldRemoveTitleHeader && ps.headerDuplicatesTitle(node) {
@@ -877,7 +871,17 @@ func (ps *Parser) grabArticle() *html.Node {
 						}
 					} else if p != nil {
 						for p.LastChild != nil && ps.isWhitespace(p.LastChild) {
-							p.RemoveChild(p.LastChild)
+							if p.NextSibling != nil && p.NextSibling.Type == html.ElementNode {
+								// NOTE: Readability.js doesn't have this condition, but this
+								// prevents whitespace nodes between paragraphs to be overzealously
+								// removed, which can lead to missing space characters between words
+								// in the resulting article.TextContent.
+								n := p.LastChild
+								dom.DetachChild(n)
+								p.Parent.InsertBefore(n, p.NextSibling)
+							} else {
+								p.RemoveChild(p.LastChild)
+							}
 						}
 						p = nil
 					}
@@ -936,7 +940,8 @@ func (ps *Parser) grabArticle() *html.Node {
 			contentScore := 1
 
 			// Add points for any commas within this paragraph.
-			contentScore += numCommas
+			// NOTE: Readability.js has a bug where it always adds 1 to comma count
+			contentScore += numCommas + 1
 
 			// For every 100 characters in this paragraph, add another point. Up to 3 points.
 			contentScore += int(math.Min(math.Floor(float64(numChars)/100.0), 3.0))
@@ -1274,16 +1279,43 @@ func (ps *Parser) getJSONLD() (map[string]string, error) {
 		content := rxCDATA.ReplaceAllString(dom.TextContent(jsonLdElement), "")
 
 		// Decode JSON
-		var parsed map[string]interface{}
-		err := json.Unmarshal([]byte(content), &parsed)
+		var parsedContent interface{}
+		err := json.Unmarshal([]byte(content), &parsedContent)
 		if err != nil {
 			ps.logf("error while decoding json: %v", err)
 			return
 		}
 
+		var parsed map[string]interface{}
+		switch pc := parsedContent.(type) {
+		case []interface{}:
+			for _, item := range pc {
+				if parsedItem, ok := item.(map[string]interface{}); ok {
+					if parsedType, ok := parsedItem["@type"].(string); ok && rxJsonLdArticleTypes.MatchString(parsedType) {
+						parsed = parsedItem
+						break
+					}
+				}
+			}
+		case map[string]interface{}:
+			parsed = pc
+		}
+		if parsed == nil {
+			ps.log("unrecognized JSON-LD structure")
+			return
+		}
+
 		// Check context
-		strContext, isString := parsed["@context"].(string)
-		if !isString || !rxSchemaOrg.MatchString(strContext) {
+		switch ct := parsed["@context"].(type) {
+		case string:
+			if !rxSchemaOrg.MatchString(ct) {
+				return
+			}
+		case map[string]interface{}:
+			if vocabStr, ok := ct["@vocab"].(string); !ok || !rxSchemaOrg.MatchString(vocabStr) {
+				return
+			}
+		default:
 			return
 		}
 
@@ -1434,7 +1466,9 @@ func (ps *Parser) getArticleMetadata(jsonLd map[string]string) map[string]string
 		values["weibo:article:title"],
 		values["weibo:webpage:title"],
 		values["title"],
-		values["twitter:title"])
+		values["twitter:title"],
+		values["parsely-title"],
+	)
 
 	if metadataTitle == "" {
 		metadataTitle = ps.getArticleTitle()
@@ -1445,7 +1479,13 @@ func (ps *Parser) getArticleMetadata(jsonLd map[string]string) map[string]string
 		jsonLd["byline"],
 		values["dc:creator"],
 		values["dcterm:creator"],
-		values["author"])
+		values["author"],
+		values["parsely-author"],
+	)
+
+	if metadataByline == "" && !isValidURL(values["article:author"]) {
+		metadataByline = values["article:author"]
+	}
 
 	// get description
 	metadataExcerpt := strOr(
@@ -1478,6 +1518,7 @@ func (ps *Parser) getArticleMetadata(jsonLd map[string]string) map[string]string
 		values["dcterms.created"],
 		values["dcterms.issued"],
 		values["weibo:article:create_at"],
+		values["parsely-pub-date"],
 	)
 
 	// get modified date
@@ -1783,30 +1824,35 @@ func (ps *Parser) getClassWeight(node *html.Node) int {
 // clean cleans a node of all elements of type "tag".
 // (Unless it's a youtube/vimeo video. People love movies.)
 func (ps *Parser) clean(node *html.Node, tag string) {
-	isEmbed := indexOf([]string{"object", "embed", "iframe"}, tag) != -1
+	ps.removeNodes(dom.GetElementsByTagName(node, tag), func(element *html.Node) bool {
+		return !ps.isVideoEmbed(element)
+	})
+}
+
+// isVideoEmbed returns true if the element looks like a video embed with respect to the
+// AllowedVideoRegex property.
+func (ps *Parser) isVideoEmbed(embed *html.Node) bool {
+	if embed.Data != "object" && embed.Data != "embed" && embed.Data != "iframe" {
+		return false
+	}
+
 	rxVideoVilter := ps.AllowedVideoRegex
 	if rxVideoVilter == nil {
 		rxVideoVilter = rxVideos
 	}
 
-	ps.removeNodes(dom.GetElementsByTagName(node, tag), func(element *html.Node) bool {
-		// Allow youtube and vimeo videos through as people usually want to see those.
-		if isEmbed {
-			// First, check the elements attributes to see if any of them contain
-			// youtube or vimeo
-			for _, attr := range element.Attr {
-				if rxVideoVilter.MatchString(attr.Val) {
-					return false
-				}
-			}
-
-			// For embed with <object> tag, check inner HTML as well.
-			if dom.TagName(element) == "object" && rxVideoVilter.MatchString(dom.InnerHTML(element)) {
-				return false
-			}
+	for _, attr := range embed.Attr {
+		if rxVideoVilter.MatchString(attr.Val) {
+			return true
 		}
+	}
+
+	// For embed with <object> tag, check inner HTML as well.
+	if embed.Data == "object" && rxVideoVilter.MatchString(dom.InnerHTML(embed)) {
 		return true
-	})
+	}
+
+	return false
 }
 
 // hasAncestorTag checks if a given node has one of its ancestor tag
@@ -1916,6 +1962,12 @@ func (ps *Parser) markDataTables(root *html.Node) {
 		}
 
 		rows, columns := ps.getRowAndColumnCount(table)
+		// single column/row tables are commonly used for page layout purposes.
+		if rows == 1 || columns == 1 {
+			ps.setReadabilityDataTable(table, false)
+			continue
+		}
+
 		if rows >= 10 || columns > 4 {
 			ps.setReadabilityDataTable(table, true)
 			continue
@@ -2020,12 +2072,6 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 		return
 	}
 
-	// Prepare regex video filter
-	rxVideoVilter := ps.AllowedVideoRegex
-	if rxVideoVilter == nil {
-		rxVideoVilter = rxVideos
-	}
-
 	// Gather counts for other typical elements embedded within.
 	// Traverse backwards so we can remove nodes at the same time
 	// without effecting the traversal.
@@ -2052,7 +2098,9 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 			return true
 		}
 
+		innerTextSingle := ""
 		chars := &charCounter{}
+		textChars := &charCounter{}
 		listChars := &charCounter{}
 		var linkCharsWeighted float64
 		headingChars := &charCounter{}
@@ -2062,6 +2110,7 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 		liCount := 0
 		inputCount := 0
 		embedCount := 0
+		hasVideoEmbed := false
 
 		// Walk the DOM under this node to determine element counts and various types of content
 		// densities. Most notably, this scans for:
@@ -2070,12 +2119,16 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 		// - character count of any heading text, e.g. <h1>
 		// - character count of text under <a>, weighted by href type
 		// - number of comma characters in text
-		var walk func(*html.Node, runeCounter, runeCounter, runeCounter)
-		walk = func(n *html.Node, listCounter, headingCounter, linkCounter runeCounter) {
+		var walk func(*html.Node, runeCounter, runeCounter, runeCounter, runeCounter)
+		walk = func(n *html.Node, textCounter, listCounter, headingCounter, linkCounter runeCounter) {
 			if n.Type == html.TextNode {
+				oldCharCount := chars.Total
 				for _, r := range n.Data {
 					chars.Count(r)
 					commas.Count(r)
+					if textCounter != nil {
+						textCounter.Count(r)
+					}
 					if listCounter != nil {
 						listCounter.Count(r)
 					}
@@ -2085,6 +2138,11 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 					if linkCounter != nil {
 						linkCounter.Count(r)
 					}
+				}
+				if chars.Total > oldCharCount {
+					// If the character counter has incremented, this text has non-whitespace
+					// content. Save it so we can match it against rxAdWords below.
+					innerTextSingle = n.Data
 				}
 				return
 			}
@@ -2111,13 +2169,27 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 					inputCount++
 				case "object", "embed", "iframe":
 					embedCount++
+					if ps.isVideoEmbed(n) {
+						hasVideoEmbed = true
+					}
+				}
+				// separate switch statement because it has a lot of overlap with elements of above
+				switch n.Data {
+				case "blockquote", "dl", "div", "img", "ol", "p", "pre", "table", "ul", "span", "li", "td":
+					textCounter = textChars.ResetContext()
 				}
 			}
-			for child := range n.ChildNodes() {
-				walk(child, listCounter, headingCounter, linkCounter)
+			for child := n.FirstChild; child != nil; child = child.NextSibling {
+				walk(child, textCounter, listCounter, headingCounter, linkCounter)
 			}
 		}
-		walk(node, nil, nil, nil)
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			walk(child, nil, nil, nil, nil)
+		}
+
+		if hasVideoEmbed {
+			return false
+		}
 
 		isList := tag == "ul" || tag == "ol"
 		if !isList {
@@ -2127,42 +2199,54 @@ func (ps *Parser) cleanConditionally(element *html.Node, tag string) {
 		// If there are not very many commas, and the number of non-paragraph elements is more than
 		// paragraphs or other ominous signs, remove the element.
 		if commas.Total < 10 {
-			embeds := ps.getAllNodesWithTag(node, "object", "embed", "iframe")
-			for _, embed := range embeds {
-				// If this embed has attribute that matches video regex,
-				// don't delete it.
-				for _, attr := range embed.Attr {
-					if rxVideoVilter.MatchString(attr.Val) {
-						return false
-					}
-				}
-
-				// For embed with <object> tag, check inner HTML as well.
-				if dom.TagName(embed) == "object" && rxVideoVilter.MatchString(dom.InnerHTML(embed)) {
-					return false
+			if innerTextSingle != "" {
+				// These patterns themselves don't have any spaces, so we can get away without using
+				// normalizeWhitespace.
+				innerTextSingle = strings.TrimSpace(innerTextSingle)
+				if rxAdWords.MatchString(innerTextSingle) || rxLoadingWords.MatchString(innerTextSingle) {
+					return true
 				}
 			}
 
+			var textDensity float64
+			var linkDensity float64
 			var headingDensity float64
 			if chars.Total > 0 {
-				headingDensity = float64(headingChars.Total) / float64(chars.Total)
-			}
-			var linkDensity float64
-			if chars.Total > 0 {
+				textDensity = float64(textChars.Total) / float64(chars.Total)
 				linkDensity = linkCharsWeighted / float64(chars.Total)
+				headingDensity = float64(headingChars.Total) / float64(chars.Total)
 			}
 
 			// Readability.js reduces the weight of <li> elements by a static 100 when comparing to
 			// the number of paragraphs.
 			const liCountOffset = -100
 
-			haveToRemove := (imgCount > 1 && float64(pCount)/float64(imgCount) < 0.5 && !ps.hasAncestorTag(node, "figure", 3, nil)) ||
-				(!isList && (liCount+liCountOffset) > pCount) ||
-				(float64(inputCount) > math.Floor(float64(pCount)/3)) ||
-				(!isList && headingDensity < 0.9 && chars.Total < 25 && (imgCount == 0 || imgCount > 2) && !ps.hasAncestorTag(node, "figure", 3, nil)) ||
-				(!isList && weight < 25 && linkDensity > 0.2) ||
-				(weight >= 25 && linkDensity > 0.5) ||
-				((embedCount == 1 && chars.Total < 75) || embedCount > 1)
+			haveToRemove := false
+			if imgCount > 1 && float64(pCount)/float64(imgCount) < 0.5 && !ps.hasAncestorTag(node, "figure", 3, nil) {
+				ps.logf("bad p to img ratio (img=%d, p=%d)", pCount, imgCount)
+				haveToRemove = true
+			} else if !isList && (liCount+liCountOffset) > pCount {
+				ps.logf("too many li's outside of a list (li=%d%+d > p=%d)", liCount, liCountOffset, pCount)
+				haveToRemove = true
+			} else if float64(inputCount) > math.Floor(float64(pCount)/3) {
+				ps.logf("too many inputs per p (input=%d, p=%d)", inputCount, pCount)
+				haveToRemove = true
+			} else if !isList && headingDensity < 0.9 && chars.Total < 25 && (imgCount == 0 || imgCount > 2) && linkDensity > 0 && !ps.hasAncestorTag(node, "figure", 3, nil) {
+				ps.logf("suspiciously short (headingDensity=%.2f, img=%d, linkDensity=%.2f)", headingDensity, imgCount, linkDensity)
+				haveToRemove = true
+			} else if !isList && weight < 25 && linkDensity > 0.2 {
+				ps.logf("low weight and a little linky (linkDensity=%.2f)", linkDensity)
+				haveToRemove = true
+			} else if weight >= 25 && linkDensity > 0.5 {
+				ps.logf("high weight and mostly links (linkDensity=%.2f)", linkDensity)
+				haveToRemove = true
+			} else if (embedCount == 1 && chars.Total < 75) || embedCount > 1 {
+				ps.logf("suspicious embed (embedCount=%d, contentLength=%d)", embedCount, chars.Total)
+				haveToRemove = true
+			} else if imgCount == 0 && textDensity == 0 {
+				ps.log("no useful content (img=0, textDensity=0.0)")
+				haveToRemove = true
+			}
 
 			// Allow simple lists of images to remain in pages
 			if isList && haveToRemove {
@@ -2396,7 +2480,14 @@ type inspectedNode struct {
 }
 
 func (n *inspectedNode) String() string {
-	return dom.OuterHTML(n.node)
+	if n.node.Type == html.TextNode {
+		return n.node.Data
+	}
+	attrs := ""
+	for _, attr := range n.node.Attr {
+		attrs += fmt.Sprintf(` %s="%s"`, attr.Key, attr.Val)
+	}
+	return fmt.Sprintf("<%s%s>", n.node.Data, attrs)
 }
 
 // UNUSED CODES

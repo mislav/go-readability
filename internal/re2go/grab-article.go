@@ -1665,7 +1665,7 @@ func IsUnlikelyCandidates(input string) bool {
 	}
 }
 
-// Original pattern: (?i)and|article|body|column|content|main|shadow
+// Original pattern: (?i)and|article|body|column|content|main|mathjax|shadow
 func MaybeItsACandidate(input string) bool {
 	var cursor, marker int
 	input += string(rune(0)) // add terminating null
@@ -1699,7 +1699,7 @@ func MaybeItsACandidate(input string) bool {
 				goto yy149
 			default:
 				if limit <= cursor {
-					goto yy173
+					goto yy177
 				}
 				goto yy143
 			}
@@ -1832,6 +1832,10 @@ func MaybeItsACandidate(input string) bool {
 				fallthrough
 			case 'i':
 				goto yy162
+			case 'T':
+				fallthrough
+			case 't':
+				goto yy163
 			default:
 				goto yy151
 			}
@@ -1842,7 +1846,7 @@ func MaybeItsACandidate(input string) bool {
 			case 'A':
 				fallthrough
 			case 'a':
-				goto yy163
+				goto yy164
 			default:
 				goto yy151
 			}
@@ -1858,7 +1862,7 @@ func MaybeItsACandidate(input string) bool {
 			case 'I':
 				fallthrough
 			case 'i':
-				goto yy164
+				goto yy165
 			default:
 				goto yy151
 			}
@@ -1880,7 +1884,7 @@ func MaybeItsACandidate(input string) bool {
 			case 'U':
 				fallthrough
 			case 'u':
-				goto yy165
+				goto yy166
 			default:
 				goto yy151
 			}
@@ -1891,7 +1895,7 @@ func MaybeItsACandidate(input string) bool {
 			case 'T':
 				fallthrough
 			case 't':
-				goto yy166
+				goto yy167
 			default:
 				goto yy151
 			}
@@ -1910,10 +1914,10 @@ func MaybeItsACandidate(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'D':
+			case 'H':
 				fallthrough
-			case 'd':
-				goto yy167
+			case 'h':
+				goto yy168
 			default:
 				goto yy151
 			}
@@ -1921,14 +1925,25 @@ func MaybeItsACandidate(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'C':
+			case 'D':
 				fallthrough
-			case 'c':
-				goto yy168
+			case 'd':
+				goto yy169
 			default:
 				goto yy151
 			}
 		yy165:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'C':
+				fallthrough
+			case 'c':
+				goto yy170
+			default:
+				goto yy151
+			}
+		yy166:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1939,25 +1954,14 @@ func MaybeItsACandidate(input string) bool {
 			default:
 				goto yy151
 			}
-		yy166:
+		yy167:
 			cursor++
 			yych = input[cursor]
 			switch yych {
 			case 'E':
 				fallthrough
 			case 'e':
-				goto yy169
-			default:
-				goto yy151
-			}
-		yy167:
-			cursor++
-			yych = input[cursor]
-			switch yych {
-			case 'O':
-				fallthrough
-			case 'o':
-				goto yy170
+				goto yy171
 			default:
 				goto yy151
 			}
@@ -1965,10 +1969,10 @@ func MaybeItsACandidate(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'L':
+			case 'J':
 				fallthrough
-			case 'l':
-				goto yy171
+			case 'j':
+				goto yy172
 			default:
 				goto yy151
 			}
@@ -1976,14 +1980,47 @@ func MaybeItsACandidate(input string) bool {
 			cursor++
 			yych = input[cursor]
 			switch yych {
-			case 'N':
+			case 'O':
 				fallthrough
-			case 'n':
-				goto yy172
+			case 'o':
+				goto yy173
 			default:
 				goto yy151
 			}
 		yy170:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'L':
+				fallthrough
+			case 'l':
+				goto yy174
+			default:
+				goto yy151
+			}
+		yy171:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'N':
+				fallthrough
+			case 'n':
+				goto yy175
+			default:
+				goto yy151
+			}
+		yy172:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'A':
+				fallthrough
+			case 'a':
+				goto yy176
+			default:
+				goto yy151
+			}
+		yy173:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -1994,7 +2031,7 @@ func MaybeItsACandidate(input string) bool {
 			default:
 				goto yy151
 			}
-		yy171:
+		yy174:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -2005,7 +2042,7 @@ func MaybeItsACandidate(input string) bool {
 			default:
 				goto yy151
 			}
-		yy172:
+		yy175:
 			cursor++
 			yych = input[cursor]
 			switch yych {
@@ -2016,7 +2053,18 @@ func MaybeItsACandidate(input string) bool {
 			default:
 				goto yy151
 			}
-		yy173:
+		yy176:
+			cursor++
+			yych = input[cursor]
+			switch yych {
+			case 'X':
+				fallthrough
+			case 'x':
+				goto yy157
+			default:
+				goto yy151
+			}
+		yy177:
 			{
 				return false
 			}

@@ -1,7 +1,10 @@
 {
-    "title": "Yahoo News - Latest News \u0026 Headlines",
-    "byline": "NATALIYA VASILYEVA",
-    "excerpt": "The latest news and headlines from Yahoo! News. Get breaking news stories and in-depth coverage with videos and photos.",
-    "language": "en-US",
-    "readerable": true
+  "title": "Yahoo News - Latest News & Headlines",
+  "byline": "NATALIYA VASILYEVA",
+  "dir": null,
+  "language": "en-US",
+  "excerpt": "The latest news and headlines from Yahoo! News. Get breaking news stories and in-depth coverage with videos and photos.",
+  "siteName": null,
+  "publishedTime": null,
+  "readerable": true
 }

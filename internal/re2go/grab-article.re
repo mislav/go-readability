@@ -19,7 +19,7 @@ func IsUnlikelyCandidates(input string) bool {
 	}
 }
 
-// Original pattern: (?i)and|article|body|column|content|main|shadow
+// Original pattern: (?i)and|article|body|column|content|main|mathjax|shadow
 func MaybeItsACandidate(input string) bool {
 	var cursor, marker int
 	input += string(rune(0)) // add terminating null
@@ -29,7 +29,7 @@ func MaybeItsACandidate(input string) bool {
 	for { /*!use:re2c:base_template
 		re2c:case-insensitive = 1;
 
-		maybe = and|article|body|column|content|main|shadow;
+		maybe = and|article|body|column|content|main|mathjax|shadow;
 
 		{maybe} { return true }
 		*       { continue }
