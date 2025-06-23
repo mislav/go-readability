@@ -1,6 +1,6 @@
 # mislav/go-readability
 
-This is a fork of `github.com/go-shiori/go-readability` that adds performance optimizations and some fixes for extracting correct article content.
+This is a fork of `github.com/go-shiori/go-readability` that adds performance optimizations, compatibility with [Readability.js 0.6.0](https://github.com/mozilla/readability/blob/main/CHANGELOG.md#060---2025-03-03), and some fixes for extracting article contents such as images.
 
 ## Changes
 
@@ -17,6 +17,7 @@ This is a fork of `github.com/go-shiori/go-readability` that adds performance op
 - Merge branch 'figure-fix' - mislav/go-readability@a44e548
 - Merge pull request #4 from mislav/linter-fixes - mislav/go-readability@31d0ef0
 - Merge pull request #5 from mislav/parse-and-mutate - mislav/go-readability@daa20d1
+- Merge pull request #8 from mislav/readability.js-0.6.0 - mislav/go-readability@772e5b1
 
 ### My pull requests to upstream
 
@@ -32,6 +33,6 @@ This is a fork of `github.com/go-shiori/go-readability` that adds performance op
 The benchmark measures the performance of parsing a very large HTML document (`test-pages/wikipedia-2/source.html`):
 
 ~~~
-before: BenchmarkParser-8   	      24	  50281588 ns/op	73722886 B/op	  201173 allocs/op
-after : BenchmarkParser-8   	      39	  28989067 ns/op	 7935952 B/op	  106772 allocs/op
+before: BenchmarkParser-8   	      24	  48802696 ns/op	73717770 B/op	  201170 allocs/op
+after : BenchmarkParser-8   	      39	  34179161 ns/op	 7848228 B/op	   99309 allocs/op
 ~~~
