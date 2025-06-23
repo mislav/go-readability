@@ -1451,6 +1451,10 @@ func (ps *Parser) getArticleMetadata(jsonLd map[string]string) map[string]string
 		values["parsely-author"],
 	)
 
+	if metadataByline == "" && !isValidURL(values["article:author"]) {
+		metadataByline = values["article:author"]
+	}
+
 	// get description
 	metadataExcerpt := strOr(
 		jsonLd["excerpt"],
