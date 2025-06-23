@@ -21,7 +21,7 @@ import (
 // All of the regular expressions in use within readability.
 // Defined up here so we don't instantiate them repeatedly in loops *.
 var (
-	rxVideos               = regexp.MustCompile(`(?i)//(www\.)?((dailymotion|youtube|youtube-nocookie|player\.vimeo|v\.qq)\.com|(archive|upload\.wikimedia)\.org|player\.twitch\.tv)`)
+	rxVideos               = regexp.MustCompile(`(?i)//(www\.)?((dailymotion|youtube|youtube-nocookie|player\.vimeo|v\.qq|bilibili|live\.bilibili)\.com|(archive|upload\.wikimedia)\.org|player\.twitch\.tv)`)
 	rxTokenize             = regexp.MustCompile(`(?i)\W+`)
 	rxHasContent           = regexp.MustCompile(`(?i)\S$`)
 	rxPropertyPattern      = regexp.MustCompile(`(?i)\s*(dc|dcterm|og|article|twitter)\s*:\s*(author|creator|description|title|site_name|published_time|modified_time|image\S*)\s*`)
