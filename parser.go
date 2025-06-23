@@ -53,7 +53,7 @@ var (
 var (
 	unlikelyRoles                = sliceToMap("menu", "menubar", "complementary", "navigation", "alert", "alertdialog", "dialog")
 	divToPElems                  = sliceToMap("blockquote", "dl", "div", "img", "ol", "p", "pre", "table", "ul", "select")
-	alterToDivExceptions         = []string{"div", "article", "section", "p"}
+	alterToDivExceptions         = []string{"div", "article", "section", "p", "ol", "ul"}
 	presentationalAttributes     = []string{"align", "background", "bgcolor", "border", "cellpadding", "cellspacing", "frame", "hspace", "rules", "style", "valign", "vspace"}
 	deprecatedSizeAttributeElems = []string{"table", "th", "td", "hr", "pre"}
 	phrasingElems                = []string{
