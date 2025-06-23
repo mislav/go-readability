@@ -1274,8 +1274,16 @@ func (ps *Parser) getJSONLD() (map[string]string, error) {
 		}
 
 		// Check context
-		strContext, isString := parsed["@context"].(string)
-		if !isString || !rxSchemaOrg.MatchString(strContext) {
+		switch ct := parsed["@context"].(type) {
+		case string:
+			if !rxSchemaOrg.MatchString(ct) {
+				return
+			}
+		case map[string]interface{}:
+			if vocabStr, ok := ct["@vocab"].(string); !ok || !rxSchemaOrg.MatchString(vocabStr) {
+				return
+			}
+		default:
 			return
 		}
 
