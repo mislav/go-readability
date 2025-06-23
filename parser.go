@@ -761,6 +761,7 @@ func (ps *Parser) grabArticle() *html.Node {
 		var node = dom.DocumentElement(doc)
 		shouldRemoveTitleHeader := true
 
+	grabLoop:
 		for node != nil {
 			matchString := dom.ClassName(node) + " " + dom.ID(node)
 
@@ -785,6 +786,18 @@ func (ps *Parser) grabArticle() *html.Node {
 			// Check to see if this node is a byline, and remove it if
 			// it is true.
 			if ps.articleByline == "" && ps.isValidByline(node, matchString) {
+				// Find child node matching [itemprop="name"] and use that if it exists for a more
+				// accurate author name byline
+				endOfSearchMarkerNode := ps.getNextNode(node, true)
+				for next := ps.getNextNode(node, false); next != nil && next != endOfSearchMarkerNode; next = ps.getNextNode(next, false) {
+					itemprop := dom.GetAttribute(next, "itemprop")
+					if strings.Contains(itemprop, "name") {
+						ps.articleByline = ps.getInnerText(next, false)
+						node = ps.removeAndGetNext(node)
+						continue grabLoop
+					}
+				}
+
 				bylineText := ps.getInnerText(node, false)
 				// For now, it's intentional that counting characters happens before
 				// whitespace normalization. Doing it the other way around breaks several
