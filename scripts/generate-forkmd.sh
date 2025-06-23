@@ -17,13 +17,13 @@ bench_after="$(run_benchmark)"
   cat <<MARKDOWN
 # mislav/go-readability
 
-This is a fork of \`github.com/go-shiori/go-readability\` that adds performance optimizations and some fixes for extracting correct article content.
+This is a fork of \`github.com/go-shiori/go-readability\` that adds performance optimizations, compatibility with [Readability.js 0.6.0](https://github.com/mozilla/readability/blob/main/CHANGELOG.md#060---2025-03-03), and some fixes for extracting article contents such as images.
 
 ## Changes
 
 MARKDOWN
 
-  git log --reverse --format='- %s - mislav/go-readability@%h' --merges upstream/master...
+  git log --reverse --format='- %s - mislav/go-readability@%h' --merges upstream/master... | grep -vwF fork.md
 
   cat <<MARKDOWN
 
