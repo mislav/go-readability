@@ -1279,10 +1279,29 @@ func (ps *Parser) getJSONLD() (map[string]string, error) {
 		content := rxCDATA.ReplaceAllString(dom.TextContent(jsonLdElement), "")
 
 		// Decode JSON
-		var parsed map[string]interface{}
-		err := json.Unmarshal([]byte(content), &parsed)
+		var parsedContent interface{}
+		err := json.Unmarshal([]byte(content), &parsedContent)
 		if err != nil {
 			ps.logf("error while decoding json: %v", err)
+			return
+		}
+
+		var parsed map[string]interface{}
+		switch pc := parsedContent.(type) {
+		case []interface{}:
+			for _, item := range pc {
+				if parsedItem, ok := item.(map[string]interface{}); ok {
+					if parsedType, ok := parsedItem["@type"].(string); ok && rxJsonLdArticleTypes.MatchString(parsedType) {
+						parsed = parsedItem
+						break
+					}
+				}
+			}
+		case map[string]interface{}:
+			parsed = pc
+		}
+		if parsed == nil {
+			ps.log("unrecognized JSON-LD structure")
 			return
 		}
 
